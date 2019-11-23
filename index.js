@@ -79,6 +79,36 @@ const getMount = upgrades => {
   }
 }
 
+const getProfiles = profiles => {
+  const typePath = ['_attributes', 'typeName']
+  const global = find(pathEq(typePath, '1 Global'), profiles)
+  const defensive = find(pathEq(typePath, '2 Defensive'), profiles)
+  const offensive = find(pathEq(typePath, '3 Offensive'), profiles)
+  const attrByName = (name, a) => prop('_text', defaultTo({}, find(pathEq(namePath, name), a.characteristics.characteristic)))
+  return {
+    global: {
+      adv: attrByName('Adv', global),
+      mar: attrByName('Mar', global),
+      dis: attrByName('Dis', global),
+      rules: attrByName('Rules', global)
+    },
+    defensive: {
+      hp: attrByName('HP', defensive),
+      def: attrByName('Def', defensive),
+      res: attrByName('Res',defensive),
+      arm: attrByName('Arm', defensive),
+      rules: attrByName('Rules', defensive)
+    },
+    offensive: {
+      att: attrByName('Att', offensive),
+      off: attrByName('Off', offensive),
+      str: attrByName('Str', offensive),
+      agi: attrByName('Agi', offensive),
+      rules: attrByName('Rules', offensive)
+    }
+  }
+}
+
 const sumUnitCost = unit => {
   return sum(flatten([
     parseInt(unit.baseCost),
@@ -115,10 +145,12 @@ const results = selection.map(unit => {
     mount: getMount(upgrades)
   }
 
+  result.profiles = find(isModel, defaultTo([],upgrades)) || result.name === 'Feldraks' ? null : getProfiles(unit.profiles.profile)
   result.cost = sumUnitCost(result)
   result.hasUpgrades = hasUpgrades(result)
   return result
 })
+
 const deduped = reduce((acc, val) => {
   const match = find(a => {
     return equals(a.name, val.name) &&
@@ -134,6 +166,6 @@ const deduped = reduce((acc, val) => {
     return acc
   }
 }, [], results)
-
+//console.log(JSON.stringify(deduped, null, 2));
 const grouped = flatten(values(groupBy(prop('category'), deduped)))
-console.log(join('', append("Total: " + path(costPath, raw.roster), map(swfbr, grouped))))
+console.log(join('\n', append("Total: " + path(costPath, raw.roster), map(swfbr, grouped))))
